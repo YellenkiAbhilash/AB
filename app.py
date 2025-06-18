@@ -75,6 +75,7 @@ def voice():
 
         if q == 0:
             response.say("Welcome to the HR interview. Let's begin.")
+            response.pause(length=5)  # 5 second pause after welcome
             response.redirect("/voice?q=1")
             return str(response)
 
@@ -109,6 +110,7 @@ def voice():
                 )
                 gather.say(questions[q])
                 response.append(gather)
+                response.pause(length=5)  # 5 second pause after question
                 response.redirect(f"/voice?q={q}")
             except Exception as e:
                 logger.error(f"Error setting up gather: {str(e)}")
