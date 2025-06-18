@@ -99,20 +99,15 @@ def voice():
 
         if q < len(questions):
             try:
-                # Enhanced Gather configuration for better speech recognition
+                # Simplified Gather configuration
                 gather = Gather(
                     input='speech',
                     action=f"/voice?q={q+1}",
                     method="POST",
-                    timeout=15,  # Increased timeout
-                    speech_timeout='auto',  # Auto timeout for speech
-                    language='en-US',  # Specify language
-                    enhanced='true',  # Use enhanced speech recognition
-                    speech_model='phone_call',  # Optimize for phone calls
-                    profanity_filter='false'  # Don't filter words
+                    timeout=10,
+                    language='en-US'
                 )
-                # Use a clearer voice and slower speech rate
-                gather.say(questions[q], voice='Polly.Amy', rate='0.9')
+                gather.say(questions[q])
                 response.append(gather)
                 response.redirect(f"/voice?q={q}")
             except Exception as e:
