@@ -78,10 +78,13 @@ def voice():
                 input='speech',
                 action=f"/voice?q={q+1}",
                 method="POST",
-                timeout=5
+                timeout=5,
+                finishOnKey='#'
             )
             gather.say(questions[q])
             response.append(gather)
+            # Add a fallback in case of timeout
+            response.redirect(f"/voice?q={q}")
         else:
             response.say("Thanks for your answers. We've recorded your responses. Goodbye!")
             response.hangup()
