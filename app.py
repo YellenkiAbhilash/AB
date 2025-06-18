@@ -24,18 +24,21 @@ logger = logging.getLogger(__name__)
 def index():
     if request.method == 'POST':
         to_number = request.form['phone']
+        logger.info(f"Starting call to {to_number}")
         call = client.calls.create(
             url='https://ab-vaya.onrender.com/voice?q=0',
             to=to_number,
             from_=TWILIO_PHONE_NUMBER,
             record=True
         )
+        logger.info(f"Call started with SID: {call.sid}")
         return f"✅ Call started! Call SID: {call.sid}"
     return render_template('index.html')
 
 @app.route('/voice', methods=['GET', 'POST'])
 def voice():
     q = int(request.args.get("q", 0))
+    logger.info(f"Voice route called with q={q}")
     with open("questions.json") as f:
         questions = json.load(f)
 
