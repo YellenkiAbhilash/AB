@@ -66,20 +66,33 @@ def voice():
         return str(response)
 
     if request.method == "POST":
+        # Get the speech result and clean it
         answer = request.values.get("SpeechResult", "").strip()
-        logger.info(f"Received answer for question {q}: {answer}")
+        confidence = request.values.get("Confidence", "0")
+        logger.info(f"Received answer for question {q}: {answer} (Confidence: {confidence})")
+        
         if answer and q > 0:
             try:
                 with open("responses.csv", "a", newline='', encoding='utf-8') as f:
                     writer = csv.writer(f)
-                    writer.writerow([f"Q{q}", questions[q-1], answer])
-                    logger.info(f"Saved answer to responses.csv: Q{q}, {questions[q-1]}, {answer}")
+                    writer.writerow([f"Q{q}", questions[q-1], answer, confidence])
+                    logger.info(f"Saved answer to responses.csv: Q{q}, {questions[q-1]}, {answer}, {confidence}")
             except Exception as e:
                 logger.error(f"Error saving response: {str(e)}")
 
     if q < len(questions):
-        gather = Gather(input='speech', action=f"/voice?q={q+1}", method="POST", timeout=5)
-        gather.say(questions[q])
+        # Configure Gather with improved speech recognition settings
+        gather = Gather(
+            input='speech',
+            action=f"/voice?q={q+1}",
+            method="POST",
+            timeout=10,  # Increased timeout
+            speech_timeout='auto',  # Auto timeout for speech
+            language='en-US',  # Specify language
+            enhanced='true',  # Use enhanced speech recognition
+            speech_model='phone_call'  # Optimize for phone calls
+        )
+        gather.say(questions[q], voice='Polly.Amy')  # Use a clearer voice
         response.append(gather)
         response.redirect(f"/voice?q={q}")
     else:

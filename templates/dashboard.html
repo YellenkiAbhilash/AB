@@ -1,22 +1,59 @@
 <!DOCTYPE html>
 <html>
-<head><title>Admin Dashboard</title></head>
+<head>
+    <title>Admin Dashboard</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .confidence-high {
+            color: green;
+        }
+        .confidence-medium {
+            color: orange;
+        }
+        .confidence-low {
+            color: red;
+        }
+    </style>
+</head>
 <body>
-  <h2>Recorded Responses</h2>
-  {% if responses %}
-    <table border="1">
-      <tr><th>Question No</th><th>Question</th><th>Answer</th></tr>
-      {% for row in responses %}
-      <tr>
-        <td>{{ row[0] }}</td>
-        <td>{{ row[1] }}</td>
-        <td>{{ row[2] }}</td>
-      </tr>
-      {% endfor %}
-    </table>
-    <a href="/download">📥 Download CSV</a>
-  {% else %}
-    <p>No responses yet.</p>
-  {% endif %}
+    <h2>Recorded Responses</h2>
+    {% if responses %}
+        <table>
+            <tr>
+                <th>Question No</th>
+                <th>Question</th>
+                <th>Answer</th>
+                <th>Confidence</th>
+            </tr>
+            {% for row in responses %}
+            <tr>
+                <td>{{ row[0] }}</td>
+                <td>{{ row[1] }}</td>
+                <td>{{ row[2] }}</td>
+                <td class="{% if row[3]|float > 0.8 %}confidence-high{% elif row[3]|float > 0.5 %}confidence-medium{% else %}confidence-low{% endif %}">
+                    {{ (row[3]|float * 100)|round(1) }}%
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        <a href="/download">📥 Download CSV</a>
+    {% else %}
+        <p>No responses yet.</p>
+    {% endif %}
 </body>
 </html>
