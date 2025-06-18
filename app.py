@@ -127,16 +127,48 @@ def voice():
 
 @app.route('/admin')
 def admin():
-    logger.info("Admin route accessed")
-    data = []
+    logger.info("Admin dashboard accessed")
     try:
-        if os.path.exists("responses.csv"):
-            with open("responses.csv", newline='', encoding='utf-8') as f:
+        # Initialize empty responses list
+        responses = []
+        
+        # Safely read responses from CSV
+        try:
+            with open("responses.csv", "r", encoding='utf-8') as f:
                 reader = csv.reader(f)
-                data = list(reader)
+                for row in reader:
+                    if len(row) >= 3:  # Ensure row has enough columns
+                        responses.append({
+                            "question_no": row[0],
+                            "question": row[1],
+                            "answer": row[2]
+                        })
+                    else:
+                        logger.warning(f"Skipping invalid row in responses.csv: {row}")
+        except FileNotFoundError:
+            logger.warning("responses.csv not found - starting with empty responses")
+        except Exception as e:
+            logger.error(f"Error reading responses.csv: {str(e)}")
+            # Continue with empty responses list
+        
+        # Safely read questions from JSON
+        try:
+            with open("questions.json", "r", encoding='utf-8') as f:
+                questions = json.load(f)
+        except FileNotFoundError:
+            logger.error("questions.json not found")
+            return "Error: Questions file not found", 500
+        except json.JSONDecodeError as e:
+            logger.error(f"Error parsing questions.json: {str(e)}")
+            return "Error: Invalid questions file format", 500
+        except Exception as e:
+            logger.error(f"Error reading questions.json: {str(e)}")
+            return "Error: Could not read questions file", 500
+
+        return render_template('dashboard.html', responses=responses, questions=questions)
     except Exception as e:
-        logger.error(f"Error loading responses: {str(e)}")
-    return render_template("dashboard.html", responses=data)
+        logger.error(f"Critical error in admin dashboard: {str(e)}")
+        return "An error occurred while loading the dashboard. Please try again.", 500
 
 @app.route('/download')
 def download():
