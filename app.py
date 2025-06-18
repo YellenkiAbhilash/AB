@@ -49,13 +49,29 @@ def index():
 def voice():
     logger.info("Voice route accessed")
     try:
-        q = int(request.args.get("q", 0))
+        # Initialize response early
+        response = VoiceResponse()
+        
+        # Safely get question number with default
+        try:
+            q = int(request.args.get("q", "0"))
+        except ValueError:
+            logger.error("Invalid question number received")
+            response.say("Error: Invalid question number")
+            response.hangup()
+            return str(response)
+            
         logger.info(f"Processing question {q}")
         
-        with open("questions.json") as f:
-            questions = json.load(f)
-
-        response = VoiceResponse()
+        # Safely load questions
+        try:
+            with open("questions.json", "r", encoding='utf-8') as f:
+                questions = json.load(f)
+        except Exception as e:
+            logger.error(f"Error loading questions: {str(e)}")
+            response.say("Error loading questions")
+            response.hangup()
+            return str(response)
 
         if q == 0:
             response.say("Welcome to the HR interview. Let's begin.")
@@ -63,37 +79,47 @@ def voice():
             return str(response)
 
         if request.method == "POST":
-            # Get the speech result and clean it
-            answer = request.values.get("SpeechResult", "").strip()
-            logger.info(f"Received answer for question {q}: {answer}")
-            
-            if answer and q > 0:
-                try:
-                    with open("responses.csv", "a", newline='', encoding='utf-8') as f:
-                        writer = csv.writer(f)
-                        writer.writerow([f"Q{q}", questions[q-1], answer])
-                        logger.info(f"Saved answer to responses.csv: Q{q}, {questions[q-1]}, {answer}")
-                except Exception as e:
-                    logger.error(f"Error saving response: {str(e)}")
+            try:
+                # Get the speech result and clean it
+                answer = request.values.get("SpeechResult", "").strip()
+                logger.info(f"Received answer for question {q}: {answer}")
+                
+                if answer and q > 0:
+                    try:
+                        with open("responses.csv", "a", newline='', encoding='utf-8') as f:
+                            writer = csv.writer(f)
+                            writer.writerow([f"Q{q}", questions[q-1], answer])
+                            logger.info(f"Saved answer to responses.csv: Q{q}, {questions[q-1]}, {answer}")
+                    except Exception as e:
+                        logger.error(f"Error saving response: {str(e)}")
+                        # Continue with the interview even if saving fails
+            except Exception as e:
+                logger.error(f"Error processing POST request: {str(e)}")
+                # Continue with the interview even if processing fails
 
         if q < len(questions):
-            # Simplified Gather configuration
-            gather = Gather(
-                input='speech',
-                action=f"/voice?q={q+1}",
-                method="POST",
-                timeout=10
-            )
-            gather.say(questions[q])
-            response.append(gather)
-            response.redirect(f"/voice?q={q}")
+            try:
+                # Basic Gather configuration
+                gather = Gather(
+                    input='speech',
+                    action=f"/voice?q={q+1}",
+                    method="POST",
+                    timeout=10
+                )
+                gather.say(questions[q])
+                response.append(gather)
+                response.redirect(f"/voice?q={q}")
+            except Exception as e:
+                logger.error(f"Error setting up gather: {str(e)}")
+                response.say("Error setting up question. Please try again.")
+                response.hangup()
         else:
             response.say("Thanks for your answers. We've recorded your responses. Goodbye!")
             response.hangup()
 
         return str(response)
     except Exception as e:
-        logger.error(f"Error in voice route: {str(e)}")
+        logger.error(f"Critical error in voice route: {str(e)}")
         response = VoiceResponse()
         response.say("An error occurred. Please try again.")
         response.hangup()
