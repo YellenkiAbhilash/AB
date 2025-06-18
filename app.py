@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from twilio.rest import Client
 from twilio.twiml.voice_response import VoiceResponse, Gather
 from transcriber import transcribe_audio
+import logging
 
 load_dotenv()
 app = Flask(__name__)
@@ -14,6 +15,10 @@ TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER")
 client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -43,10 +48,12 @@ def voice():
 
     if request.method == "POST":
         answer = request.values.get("SpeechResult", "").strip()
+        logger.info(f"Received answer for question {q}: {answer}")
         if answer and q > 0:
             with open("responses.csv", "a", newline='', encoding='utf-8') as f:
                 writer = csv.writer(f)
                 writer.writerow([f"Q{q}", questions[q-1], answer])
+                logger.info(f"Saved answer to responses.csv: Q{q}, {questions[q-1]}, {answer}")
 
     if q < len(questions):
         gather = Gather(input='speech', action=f"/voice?q={q+1}", method="POST", timeout=5)
