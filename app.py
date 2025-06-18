@@ -36,6 +36,11 @@ def voice():
 
     response = VoiceResponse()
 
+    if q == 0:
+        response.say("Welcome to the HR interview. Let's begin.")
+        response.redirect("/voice?q=1")
+        return str(response)
+
     if request.method == "POST":
         answer = request.values.get("SpeechResult", "").strip()
         if answer and q > 0:
@@ -49,7 +54,7 @@ def voice():
         response.append(gather)
         response.redirect(f"/voice?q={q}")
     else:
-        response.say("Thanks. We’ve recorded your answers. Goodbye!")
+        response.say("Thanks for your answers. We've recorded your responses. Goodbye!")
         response.hangup()
 
     return str(response)
