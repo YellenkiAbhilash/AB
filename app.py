@@ -75,7 +75,6 @@ def voice():
 
         if q == 0:
             response.say("Welcome to the HR interview. Let's begin.")
-            response.pause(length=5)  # 5 second pause after welcome
             response.redirect("/voice?q=1")
             return str(response)
 
@@ -100,17 +99,16 @@ def voice():
 
         if q < len(questions):
             try:
-                # Simplified Gather configuration
+                # Configure Gather with 5-second timeout
                 gather = Gather(
                     input='speech',
                     action=f"/voice?q={q+1}",
                     method="POST",
-                    timeout=10,
+                    timeout=5,  # 5-second timeout for answer
                     language='en-US'
                 )
                 gather.say(questions[q])
                 response.append(gather)
-                response.pause(length=5)  # 5 second pause after question
                 response.redirect(f"/voice?q={q}")
             except Exception as e:
                 logger.error(f"Error setting up gather: {str(e)}")
