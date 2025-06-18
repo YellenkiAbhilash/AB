@@ -48,58 +48,56 @@ def index():
 @app.route('/voice', methods=['GET', 'POST'])
 def voice():
     logger.info("Voice route accessed")
-    q = int(request.args.get("q", 0))
-    logger.info(f"Processing question {q}")
-    
     try:
+        q = int(request.args.get("q", 0))
+        logger.info(f"Processing question {q}")
+        
         with open("questions.json") as f:
             questions = json.load(f)
-    except Exception as e:
-        logger.error(f"Error loading questions: {str(e)}")
-        return str(VoiceResponse().say("Error loading questions"))
 
-    response = VoiceResponse()
+        response = VoiceResponse()
 
-    if q == 0:
-        response.say("Welcome to the HR interview. Let's begin.")
-        response.redirect("/voice?q=1")
+        if q == 0:
+            response.say("Welcome to the HR interview. Let's begin.")
+            response.redirect("/voice?q=1")
+            return str(response)
+
+        if request.method == "POST":
+            # Get the speech result and clean it
+            answer = request.values.get("SpeechResult", "").strip()
+            logger.info(f"Received answer for question {q}: {answer}")
+            
+            if answer and q > 0:
+                try:
+                    with open("responses.csv", "a", newline='', encoding='utf-8') as f:
+                        writer = csv.writer(f)
+                        writer.writerow([f"Q{q}", questions[q-1], answer])
+                        logger.info(f"Saved answer to responses.csv: Q{q}, {questions[q-1]}, {answer}")
+                except Exception as e:
+                    logger.error(f"Error saving response: {str(e)}")
+
+        if q < len(questions):
+            # Simplified Gather configuration
+            gather = Gather(
+                input='speech',
+                action=f"/voice?q={q+1}",
+                method="POST",
+                timeout=10
+            )
+            gather.say(questions[q])
+            response.append(gather)
+            response.redirect(f"/voice?q={q}")
+        else:
+            response.say("Thanks for your answers. We've recorded your responses. Goodbye!")
+            response.hangup()
+
         return str(response)
-
-    if request.method == "POST":
-        # Get the speech result and clean it
-        answer = request.values.get("SpeechResult", "").strip()
-        confidence = request.values.get("Confidence", "0")
-        logger.info(f"Received answer for question {q}: {answer} (Confidence: {confidence})")
-        
-        if answer and q > 0:
-            try:
-                with open("responses.csv", "a", newline='', encoding='utf-8') as f:
-                    writer = csv.writer(f)
-                    writer.writerow([f"Q{q}", questions[q-1], answer, confidence])
-                    logger.info(f"Saved answer to responses.csv: Q{q}, {questions[q-1]}, {answer}, {confidence}")
-            except Exception as e:
-                logger.error(f"Error saving response: {str(e)}")
-
-    if q < len(questions):
-        # Configure Gather with improved speech recognition settings
-        gather = Gather(
-            input='speech',
-            action=f"/voice?q={q+1}",
-            method="POST",
-            timeout=10,  # Increased timeout
-            speech_timeout='auto',  # Auto timeout for speech
-            language='en-US',  # Specify language
-            enhanced='true',  # Use enhanced speech recognition
-            speech_model='phone_call'  # Optimize for phone calls
-        )
-        gather.say(questions[q], voice='Polly.Amy')  # Use a clearer voice
-        response.append(gather)
-        response.redirect(f"/voice?q={q}")
-    else:
-        response.say("Thanks for your answers. We've recorded your responses. Goodbye!")
+    except Exception as e:
+        logger.error(f"Error in voice route: {str(e)}")
+        response = VoiceResponse()
+        response.say("An error occurred. Please try again.")
         response.hangup()
-
-    return str(response)
+        return str(response)
 
 @app.route('/admin')
 def admin():
