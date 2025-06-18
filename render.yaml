@@ -5,3 +5,10 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: python app.py
     pythonVersion: 3.10
+    envVars:
+      - key: TWILIO_ACCOUNT_SID
+        value: "{{TWILIO_ACCOUNT_SID}}"  # Set this in Render dashboard
+      - key: TWILIO_AUTH_TOKEN
+        value: "{{TWILIO_AUTH_TOKEN}}"  # Set this in Render dashboard
+      - key: TWILIO_PHONE_NUMBER
+        value: "{{TWILIO_PHONE_NUMBER}}"  # Set this in Render dashboard
