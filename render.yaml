@@ -7,8 +7,8 @@ services:
     pythonVersion: 3.10
     envVars:
       - key: TWILIO_ACCOUNT_SID
-        value: "your_twilio_account_sid"
+        value: "{{TWILIO_ACCOUNT_SID}}"  # Set this in Render dashboard
       - key: TWILIO_AUTH_TOKEN
-        value: "your_twilio_auth_token"
+        value: "{{TWILIO_AUTH_TOKEN}}"  # Set this in Render dashboard
       - key: TWILIO_PHONE_NUMBER
-        value: "your_twilio_phone_number"
+        value: "{{TWILIO_PHONE_NUMBER}}"  # Set this in Render dashboard
