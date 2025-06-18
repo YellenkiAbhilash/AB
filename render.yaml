@@ -5,3 +5,10 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: python app.py
     pythonVersion: 3.10
+    envVars:
+      - key: TWILIO_ACCOUNT_SID
+        value: "your_twilio_account_sid"
+      - key: TWILIO_AUTH_TOKEN
+        value: "your_twilio_auth_token"
+      - key: TWILIO_PHONE_NUMBER
+        value: "your_twilio_phone_number"
