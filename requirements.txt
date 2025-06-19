@@ -1,13 +1,8 @@
 flask
 twilio
 python-dotenv
-<<<<<<< HEAD
 gunicorn
 pandas
 openpyxl
 schedule
 APScheduler
-=======
-google-cloud-speech
-gunicorn
->>>>>>> origin/master
