@@ -2,6 +2,7 @@ import os
 import json
 import logging
 from datetime import datetime
+import pytz
 from flask import Flask, request, render_template, redirect, send_file
 from dotenv import load_dotenv
 from twilio.rest import Client
@@ -13,6 +14,9 @@ from task_runner import TaskRunner
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Timezone
+IST = pytz.timezone('Asia/Kolkata')
 
 # Load environment variables
 load_dotenv()
@@ -52,14 +56,15 @@ def index():
             message_type = "error"
         else:
             try:
-                # Convert string to datetime
-                scheduled_time = datetime.fromisoformat(scheduled_time_str.replace('T', ' '))
+                # Convert string to IST datetime
+                naive_dt = datetime.strptime(scheduled_time_str.replace('T', ' '), '%Y-%m-%d %H:%M')
+                scheduled_time = IST.localize(naive_dt)
                 
                 # Add to Excel
                 if excel_handler.add_contact(name, phone, scheduled_time):
                     # Schedule the call
                     if call_scheduler.schedule_call(name, phone, scheduled_time):
-                        message = f"✅ Interview scheduled for {name} at {scheduled_time.strftime('%Y-%m-%d %H:%M')}"
+                        message = f"✅ Interview scheduled for {name} at {scheduled_time.strftime('%Y-%m-%d %H:%M (%Z)')}"
                         message_type = "success"
                     else:
                         message = "Contact added but failed to schedule call. Please try again."
@@ -133,10 +138,20 @@ def admin():
     try:
         # Get contacts from Excel
         contacts = excel_handler.get_all_contacts()
-        
+        # Convert all times to IST for display
+        for contact in contacts:
+            try:
+                # If not already tz-aware, localize
+                if contact['Scheduled_Time'] and not hasattr(contact['Scheduled_Time'], 'tzinfo'):
+                    contact['Scheduled_Time'] = IST.localize(datetime.strptime(str(contact['Scheduled_Time']), '%Y-%m-%d %H:%M:%S'))
+                # Format for display
+                contact['Scheduled_Time'] = contact['Scheduled_Time'].astimezone(IST).strftime('%Y-%m-%d %H:%M (%Z)')
+                if contact['Created_At']:
+                    contact['Created_At'] = IST.localize(datetime.strptime(str(contact['Created_At']), '%Y-%m-%d %H:%M:%S')).strftime('%Y-%m-%d %H:%M (%Z)')
+            except Exception:
+                pass
         # Get scheduled jobs
         scheduled_jobs = call_scheduler.get_scheduled_jobs()
-        
         # Safely read questions from JSON
         try:
             with open("questions.json", "r", encoding='utf-8') as f:
@@ -150,7 +165,6 @@ def admin():
         except Exception as e:
             logger.error(f"Error reading questions.json: {str(e)}")
             return "Error: Could not read questions file", 500
-
         return render_template('dashboard.html', 
                              questions=questions, 
                              contacts=contacts,
@@ -198,7 +212,7 @@ def status():
             'total_contacts': len(excel_handler.get_all_contacts()),
             'pending_calls': len(excel_handler.get_pending_calls()),
             'scheduled_jobs': len(call_scheduler.get_scheduled_jobs()),
-            'server_time': datetime.now().isoformat()
+            'server_time': datetime.now(IST).isoformat()
         }
         return status_info
     except Exception as e:
