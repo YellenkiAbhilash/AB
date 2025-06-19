@@ -24,13 +24,17 @@ class ExcelHandler:
             # Read existing data
             df = pd.read_excel(self.filename)
             
+            # Ensure scheduled_time is naive (no tzinfo)
+            if hasattr(scheduled_time, 'tzinfo') and scheduled_time.tzinfo is not None:
+                scheduled_time = scheduled_time.replace(tzinfo=None)
+            created_at = datetime.now()
             # Create new row
             new_row = {
                 'Name': name,
                 'Phone': phone,
                 'Scheduled_Time': scheduled_time,
                 'Status': 'Scheduled',
-                'Created_At': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                'Created_At': created_at
             }
             
             # Append new row
