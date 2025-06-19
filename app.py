@@ -65,7 +65,8 @@ def index():
                 add_result = excel_handler.add_contact(name, phone, scheduled_time)
                 if add_result:
                     if call_scheduler.schedule_call(name, phone, ist_dt):
-                        return redirect('/dashboard')
+                        message = f"✅ Interview scheduled for {name} at {ist_dt.strftime('%Y-%m-%d %H:%M (IST)')}"
+                        message_type = "success"
                     else:
                         message = "Contact added but failed to schedule call. Please try again."
                         message_type = "error"
@@ -81,8 +82,25 @@ def index():
                 logger.error(f"Error scheduling interview: {str(e)}")
                 message = "An error occurred. Please try again."
                 message_type = "error"
-    
-    return render_template('index.html', message=message, message_type=message_type)
+    # Always show dashboard data
+    contacts = excel_handler.get_all_contacts()
+    for contact in contacts:
+        try:
+            if contact['Scheduled_Time']:
+                dt = datetime.strptime(str(contact['Scheduled_Time']), '%Y-%m-%d %H:%M:%S')
+                contact['Scheduled_Time'] = dt.strftime('%Y-%m-%d %H:%M (IST)')
+            if contact['Created_At']:
+                dt = datetime.strptime(str(contact['Created_At']), '%Y-%m-%d %H:%M:%S')
+                contact['Created_At'] = dt.strftime('%Y-%m-%d %H:%M (IST)')
+        except Exception:
+            pass
+    scheduled_jobs = call_scheduler.get_scheduled_jobs()
+    try:
+        with open("questions.json", "r", encoding='utf-8') as f:
+            questions = json.load(f)
+    except Exception:
+        questions = []
+    return render_template('index.html', message=message, message_type=message_type, contacts=contacts, scheduled_jobs=scheduled_jobs, questions=questions)
 
 @app.route('/voice', methods=['GET', 'POST'])
 def voice():
@@ -133,53 +151,12 @@ def voice():
         response.hangup()
         return str(response)
 
-@app.route('/dashboard')
-def dashboard():
-    logger.info("Dashboard accessed")
-    try:
-        # Get contacts from Excel
-        contacts = excel_handler.get_all_contacts()
-        # Convert all times to IST for display
-        for contact in contacts:
-            try:
-                # Assume all times in Excel are IST naive
-                if contact['Scheduled_Time']:
-                    dt = datetime.strptime(str(contact['Scheduled_Time']), '%Y-%m-%d %H:%M:%S')
-                    contact['Scheduled_Time'] = dt.strftime('%Y-%m-%d %H:%M (IST)')
-                if contact['Created_At']:
-                    dt = datetime.strptime(str(contact['Created_At']), '%Y-%m-%d %H:%M:%S')
-                    contact['Created_At'] = dt.strftime('%Y-%m-%d %H:%M (IST)')
-            except Exception:
-                pass
-        # Get scheduled jobs
-        scheduled_jobs = call_scheduler.get_scheduled_jobs()
-        # Safely read questions from JSON
-        try:
-            with open("questions.json", "r", encoding='utf-8') as f:
-                questions = json.load(f)
-        except FileNotFoundError:
-            logger.error("questions.json not found")
-            return "Error: Questions file not found", 500
-        except json.JSONDecodeError as e:
-            logger.error(f"Error parsing questions.json: {str(e)}")
-            return "Error: Invalid questions file format", 500
-        except Exception as e:
-            logger.error(f"Error reading questions.json: {str(e)}")
-            return "Error: Could not read questions file", 500
-        return render_template('dashboard.html', 
-                             questions=questions, 
-                             contacts=contacts,
-                             scheduled_jobs=scheduled_jobs)
-    except Exception as e:
-        logger.error(f"Critical error in dashboard: {str(e)}")
-        return "An error occurred while loading the dashboard. Please try again.", 500
-
 @app.route('/cancel_call/<phone>')
 def cancel_call(phone):
     """Cancel a scheduled call"""
     try:
         if call_scheduler.cancel_call(phone):
-            return redirect('/dashboard')
+            return redirect('/')
         else:
             return "Failed to cancel call", 400
     except Exception as e:
@@ -191,7 +168,7 @@ def delete_contact(phone):
     """Delete a contact from Excel"""
     try:
         if excel_handler.delete_contact(phone):
-            return redirect('/dashboard')
+            return redirect('/')
         else:
             return "Failed to delete contact", 400
     except Exception as e:
