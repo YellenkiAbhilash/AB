@@ -202,6 +202,10 @@
                         <th>Name</th>
                         <th>Phone</th>
                         <th>Scheduled Time</th>
+                        <th>Q1</th>
+                        <th>Q2</th>
+                        <th>Q3</th>
+                        <th>Q4</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -210,6 +214,10 @@
                         <td>{{ contact.Name }}</td>
                         <td>{{ contact.Phone }}</td>
                         <td>{{ contact.Scheduled_Time }}</td>
+                        <td>{{ contact.Q1 if contact.Q1 is defined else '' }}</td>
+                        <td>{{ contact.Q2 if contact.Q2 is defined else '' }}</td>
+                        <td>{{ contact.Q3 if contact.Q3 is defined else '' }}</td>
+                        <td>{{ contact.Q4 if contact.Q4 is defined else '' }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
