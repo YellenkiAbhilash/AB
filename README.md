@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # HR Interview Automation System
 
 An automated HR interview system that schedules and conducts phone interviews using Twilio, with Excel-based contact management and automated calling.
@@ -136,3 +137,6 @@ The application is configured for deployment on Render with the provided `render
 - Regularly backup the Excel file and responses
 - Monitor call logs for any suspicious activity
 - Ensure proper access controls for the admin dashboard
+=======
+# HR
+>>>>>>> origin/master
