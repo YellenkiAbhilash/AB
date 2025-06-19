@@ -61,19 +61,21 @@ def index():
                 scheduled_time = IST.localize(naive_dt)
                 
                 # Add to Excel
-                if excel_handler.add_contact(name, phone, scheduled_time):
+                add_result = excel_handler.add_contact(name, phone, scheduled_time)
+                if add_result:
                     # Schedule the call
                     if call_scheduler.schedule_call(name, phone, scheduled_time):
-                        message = f"✅ Interview scheduled for {name} at {scheduled_time.strftime('%Y-%m-%d %H:%M (%Z)')}"
-                        message_type = "success"
+                        return redirect('/admin')
                     else:
                         message = "Contact added but failed to schedule call. Please try again."
                         message_type = "error"
                 else:
+                    logger.error(f"Failed to add contact: name={name}, phone={phone}, scheduled_time={scheduled_time}")
                     message = "Failed to add contact. Please try again."
                     message_type = "error"
                     
             except ValueError as e:
+                logger.error(f"ValueError: {e}")
                 message = "Invalid date/time format. Please try again."
                 message_type = "error"
             except Exception as e:
