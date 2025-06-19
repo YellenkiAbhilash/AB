@@ -1,6 +1,5 @@
 import os
 import json
-import csv
 import logging
 from datetime import datetime
 from flask import Flask, request, render_template, redirect, send_file
@@ -99,15 +98,6 @@ def voice():
             response.redirect(f"/voice?q=1&name={name}")
             return str(response)
 
-        if request.method == "POST":
-            answer = request.values.get("SpeechResult", "").strip()
-            logger.info(f"Received answer for question {q}: {answer}")
-            
-            if answer and q > 0:
-                with open("responses.csv", "a", newline='', encoding='utf-8') as f:
-                    writer = csv.writer(f)
-                    writer.writerow([f"Q{q}", questions[q-1], answer, name, datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
-
         if q < len(questions):
             gather = Gather(
                 input='speech',
@@ -121,7 +111,7 @@ def voice():
             # Add a fallback in case of timeout
             response.redirect(f"/voice?q={q}&name={name}")
         else:
-            response.say(f"Thanks {name} for your answers. We've recorded your responses. Goodbye!")
+            response.say(f"Thanks {name} for your answers. Goodbye!")
             response.hangup()
             
             # Update call status to completed
@@ -147,32 +137,6 @@ def admin():
         # Get scheduled jobs
         scheduled_jobs = call_scheduler.get_scheduled_jobs()
         
-        # Initialize empty responses list
-        responses = []
-        
-        # Safely read responses from CSV
-        try:
-            with open("responses.csv", "r", encoding='utf-8') as f:
-                reader = csv.reader(f)
-                for row in reader:
-                    if len(row) >= 3:  # Ensure row has enough columns
-                        response_data = {
-                            "question_no": row[0],
-                            "question": row[1],
-                            "answer": row[2]
-                        }
-                        if len(row) >= 4:
-                            response_data["name"] = row[3]
-                        if len(row) >= 5:
-                            response_data["timestamp"] = row[4]
-                        responses.append(response_data)
-                    else:
-                        logger.warning(f"Skipping invalid row in responses.csv: {row}")
-        except FileNotFoundError:
-            logger.warning("responses.csv not found - starting with empty responses")
-        except Exception as e:
-            logger.error(f"Error reading responses.csv: {str(e)}")
-        
         # Safely read questions from JSON
         try:
             with open("questions.json", "r", encoding='utf-8') as f:
@@ -188,7 +152,6 @@ def admin():
             return "Error: Could not read questions file", 500
 
         return render_template('dashboard.html', 
-                             responses=responses, 
                              questions=questions, 
                              contacts=contacts,
                              scheduled_jobs=scheduled_jobs)
@@ -219,11 +182,6 @@ def delete_contact(phone):
     except Exception as e:
         logger.error(f"Error deleting contact: {str(e)}")
         return "Error deleting contact", 500
-
-@app.route('/download')
-def download():
-    logger.info("Download route accessed")
-    return send_file("responses.csv", as_attachment=True)
 
 @app.route('/download_excel')
 def download_excel():
