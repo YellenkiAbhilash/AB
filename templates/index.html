@@ -202,7 +202,6 @@
                         <th>Name</th>
                         <th>Phone</th>
                         <th>Scheduled Time</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -211,17 +210,6 @@
                         <td>{{ contact.Name }}</td>
                         <td>{{ contact.Phone }}</td>
                         <td>{{ contact.Scheduled_Time }}</td>
-                        <td>
-                            <form method="post" action="/cancel_call/{{ contact.Phone }}" style="display:inline;">
-                                <button class="btn" onclick="return confirm('Cancel this call?')">Cancel</button>
-                            </form>
-                            <form method="post" action="/delete_contact/{{ contact.Phone }}" style="display:inline;">
-                                <button class="btn" onclick="return confirm('Delete this contact?')">Delete</button>
-                            </form>
-                            <form method="post" action="/schedule_call/{{ contact.Phone }}" style="display:inline;">
-                                <button class="schedule-btn">Schedule Interview</button>
-                            </form>
-                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
