@@ -89,18 +89,43 @@ def index():
             if contact['Scheduled_Time']:
                 dt = datetime.strptime(str(contact['Scheduled_Time']), '%Y-%m-%d %H:%M:%S')
                 contact['Scheduled_Time'] = dt.strftime('%Y-%m-%d %H:%M (IST)')
-            if contact['Created_At']:
-                dt = datetime.strptime(str(contact['Created_At']), '%Y-%m-%d %H:%M:%S')
-                contact['Created_At'] = dt.strftime('%Y-%m-%d %H:%M (IST)')
         except Exception:
             pass
-    scheduled_jobs = call_scheduler.get_scheduled_jobs()
-    try:
-        with open("questions.json", "r", encoding='utf-8') as f:
-            questions = json.load(f)
-    except Exception:
-        questions = []
-    return render_template('index.html', message=message, message_type=message_type, contacts=contacts, scheduled_jobs=scheduled_jobs, questions=questions)
+    return render_template('index.html', message=message, message_type=message_type, contacts=contacts)
+
+@app.route('/schedule_call/<phone>', methods=['POST'])
+def schedule_call(phone):
+    contacts = excel_handler.get_all_contacts()
+    contact = next((c for c in contacts if str(c['Phone']) == str(phone)), None)
+    if contact:
+        try:
+            name = contact['Name']
+            # Parse the stored scheduled time as IST
+            dt = datetime.strptime(str(contact['Scheduled_Time']).replace(' (IST)', ''), '%Y-%m-%d %H:%M')
+            ist_dt = IST.localize(dt)
+            if call_scheduler.schedule_call(name, phone, ist_dt):
+                message = f"✅ Interview rescheduled for {name} at {ist_dt.strftime('%Y-%m-%d %H:%M (IST)')}"
+                message_type = "success"
+            else:
+                message = "Failed to reschedule call."
+                message_type = "error"
+        except Exception as e:
+            logger.error(f"Error rescheduling call: {str(e)}")
+            message = "Error rescheduling call."
+            message_type = "error"
+    else:
+        message = "Contact not found."
+        message_type = "error"
+    # Show dashboard with message
+    contacts = excel_handler.get_all_contacts()
+    for contact in contacts:
+        try:
+            if contact['Scheduled_Time']:
+                dt = datetime.strptime(str(contact['Scheduled_Time']), '%Y-%m-%d %H:%M:%S')
+                contact['Scheduled_Time'] = dt.strftime('%Y-%m-%d %H:%M (IST)')
+        except Exception:
+            pass
+    return render_template('index.html', message=message, message_type=message_type, contacts=contacts)
 
 @app.route('/voice', methods=['GET', 'POST'])
 def voice():

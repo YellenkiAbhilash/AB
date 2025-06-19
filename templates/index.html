@@ -109,6 +109,19 @@
         .btn:hover {
             background-color: #b52a37;
         }
+        .schedule-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 16px;
+            margin: 2px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .schedule-btn:hover {
+            background-color: #218838;
+        }
         .download-btn {
             display: inline-block;
             padding: 8px 18px;
@@ -160,7 +173,7 @@
                     <label for="scheduled_time">Scheduled Time:</label>
                     <input type="datetime-local" id="scheduled_time" name="scheduled_time" required>
                 </div>
-                <button type="submit">Schedule Interview</button>
+                <button type="submit">Add to Scheduled Contacts</button>
             </form>
         </div>
         <div class="dashboard-section">
@@ -172,8 +185,6 @@
                         <th>Name</th>
                         <th>Phone</th>
                         <th>Scheduled Time</th>
-                        <th>Status</th>
-                        <th>Created At</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -183,16 +194,15 @@
                         <td>{{ contact.Name }}</td>
                         <td>{{ contact.Phone }}</td>
                         <td>{{ contact.Scheduled_Time }}</td>
-                        <td>{{ contact.Status }}</td>
-                        <td>{{ contact.Created_At }}</td>
                         <td>
-                            {% if contact.Status == 'Scheduled' %}
                             <form method="post" action="/cancel_call/{{ contact.Phone }}" style="display:inline;">
                                 <button class="btn" onclick="return confirm('Cancel this call?')">Cancel</button>
                             </form>
-                            {% endif %}
                             <form method="post" action="/delete_contact/{{ contact.Phone }}" style="display:inline;">
                                 <button class="btn" onclick="return confirm('Delete this contact?')">Delete</button>
+                            </form>
+                            <form method="post" action="/schedule_call/{{ contact.Phone }}" style="display:inline;">
+                                <button class="schedule-btn">Schedule Interview</button>
                             </form>
                         </td>
                     </tr>
@@ -203,54 +213,6 @@
             <div class="no-data">No contacts scheduled yet.</div>
             {% endif %}
             <a href="/download_excel" class="download-btn">Download Contacts (Excel)</a>
-        </div>
-        <div class="dashboard-section">
-            <h3>⏰ Active Scheduled Calls</h3>
-            {% if scheduled_jobs %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Job ID</th>
-                        <th>Next Run Time</th>
-                        <th>Function</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for job in scheduled_jobs %}
-                    <tr>
-                        <td>{{ job.id }}</td>
-                        <td>{{ job.next_run_time }}</td>
-                        <td>{{ job.func.__name__ }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <div class="no-data">No active scheduled calls.</div>
-            {% endif %}
-        </div>
-        <div class="dashboard-section">
-            <h3>❓ Interview Questions</h3>
-            {% if questions %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Question Number</th>
-                        <th>Question</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for question in questions %}
-                    <tr>
-                        <td>Q{{ loop.index }}</td>
-                        <td>{{ question }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <div class="no-data">No questions configured.</div>
-            {% endif %}
         </div>
     </div>
 </body>
