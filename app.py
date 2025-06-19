@@ -58,14 +58,14 @@ def index():
             try:
                 # Convert string to IST datetime
                 naive_dt = datetime.strptime(scheduled_time_str.replace('T', ' '), '%Y-%m-%d %H:%M')
-                scheduled_time = IST.localize(naive_dt)
+                ist_dt = IST.localize(naive_dt)
+                # Remove tzinfo for Excel storage, but keep as IST
+                scheduled_time = ist_dt.replace(tzinfo=None)
                 
-                # Add to Excel
                 add_result = excel_handler.add_contact(name, phone, scheduled_time)
                 if add_result:
-                    # Schedule the call
-                    if call_scheduler.schedule_call(name, phone, scheduled_time):
-                        return redirect('/admin')
+                    if call_scheduler.schedule_call(name, phone, ist_dt):
+                        return redirect('/dashboard')
                     else:
                         message = "Contact added but failed to schedule call. Please try again."
                         message_type = "error"
@@ -73,7 +73,6 @@ def index():
                     logger.error(f"Failed to add contact: name={name}, phone={phone}, scheduled_time={scheduled_time}")
                     message = "Failed to add contact. Please try again."
                     message_type = "error"
-                    
             except ValueError as e:
                 logger.error(f"ValueError: {e}")
                 message = "Invalid date/time format. Please try again."
@@ -134,22 +133,22 @@ def voice():
         response.hangup()
         return str(response)
 
-@app.route('/admin')
-def admin():
-    logger.info("Admin dashboard accessed")
+@app.route('/dashboard')
+def dashboard():
+    logger.info("Dashboard accessed")
     try:
         # Get contacts from Excel
         contacts = excel_handler.get_all_contacts()
         # Convert all times to IST for display
         for contact in contacts:
             try:
-                # If not already tz-aware, localize
-                if contact['Scheduled_Time'] and not hasattr(contact['Scheduled_Time'], 'tzinfo'):
-                    contact['Scheduled_Time'] = IST.localize(datetime.strptime(str(contact['Scheduled_Time']), '%Y-%m-%d %H:%M:%S'))
-                # Format for display
-                contact['Scheduled_Time'] = contact['Scheduled_Time'].astimezone(IST).strftime('%Y-%m-%d %H:%M (%Z)')
+                # Assume all times in Excel are IST naive
+                if contact['Scheduled_Time']:
+                    dt = datetime.strptime(str(contact['Scheduled_Time']), '%Y-%m-%d %H:%M:%S')
+                    contact['Scheduled_Time'] = dt.strftime('%Y-%m-%d %H:%M (IST)')
                 if contact['Created_At']:
-                    contact['Created_At'] = IST.localize(datetime.strptime(str(contact['Created_At']), '%Y-%m-%d %H:%M:%S')).strftime('%Y-%m-%d %H:%M (%Z)')
+                    dt = datetime.strptime(str(contact['Created_At']), '%Y-%m-%d %H:%M:%S')
+                    contact['Created_At'] = dt.strftime('%Y-%m-%d %H:%M (IST)')
             except Exception:
                 pass
         # Get scheduled jobs
@@ -172,7 +171,7 @@ def admin():
                              contacts=contacts,
                              scheduled_jobs=scheduled_jobs)
     except Exception as e:
-        logger.error(f"Critical error in admin dashboard: {str(e)}")
+        logger.error(f"Critical error in dashboard: {str(e)}")
         return "An error occurred while loading the dashboard. Please try again.", 500
 
 @app.route('/cancel_call/<phone>')
@@ -180,7 +179,7 @@ def cancel_call(phone):
     """Cancel a scheduled call"""
     try:
         if call_scheduler.cancel_call(phone):
-            return redirect('/admin')
+            return redirect('/dashboard')
         else:
             return "Failed to cancel call", 400
     except Exception as e:
@@ -192,7 +191,7 @@ def delete_contact(phone):
     """Delete a contact from Excel"""
     try:
         if excel_handler.delete_contact(phone):
-            return redirect('/admin')
+            return redirect('/dashboard')
         else:
             return "Failed to delete contact", 400
     except Exception as e:
