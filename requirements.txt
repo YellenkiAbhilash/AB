@@ -1,0 +1,8 @@
+flask
+twilio
+python-dotenv
+gunicorn
+pandas
+openpyxl
+schedule
+APScheduler
